@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+<title>LPU PTM Feedback</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700;800&display=swap');
+
+:root {
+  --yellow: #f2c300;
+  --yellow-light: #fff9d6;
+  --black: #111111;
+  --white: #ffffff;
+  --bg: #f2efe8;
+  --card: #ffffff;
+  --border: #e0dbd0;
+  --muted: #777;
+  --ink: #1a1a1a;
+  --green: #22c55e;
+  --radius: 16px;
+  --shadow: 0 2px 18px rgba(0,0,0,0.07);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* HEADER */
+.header {
+  background: var(--black);
+  border-bottom: 4px solid var(--yellow);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.logo {
+  width: 76px;
+  background: #fff;
+  border-radius: 9px;
+  padding: 5px;
+  flex-shrink: 0;
+}
+.header-text h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+}
+.header-text p { font-size: 12px; color: #999; margin-top: 3px; }
+
+/* PAGE */
+.page {
+  max-width: 720px;
+  margin: 28px auto 52px;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* CARD */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-top {
+  background: var(--black);
+  padding: 11px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-badge {
+  background: var(--yellow);
+  color: var(--black);
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+.card-body { padding: 20px; }
+
+/* FIELD */
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-bottom: 7px;
+}
+.field input[type="text"],
+.field textarea {
+  width: 100%;
+  background: #f7f4ef;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.field input[type="text"]:focus,
+.field textarea:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 3px rgba(242,195,0,0.18);
+  background: #fff;
+}
+.field textarea { height: 84px; resize: vertical; }
+.row { display: flex; gap: 14px; flex-wrap: wrap; }
+.row .field { flex: 1; min-width: 150px; }
+
+/* ISSUE TILES */
+.issue-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.issue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.tile {
+  border: 2px solid var(--border);
+  border-radius: 13px;
+  padding: 18px 10px 13px;
+  cursor: pointer;
+  text-align: center;
+  background: #f7f4ef;
+  transition: all .22s cubic-bezier(.22,.68,0,1.15);
+  position: relative;
+  user-select: none;
+}
+.tile:hover {
+  border-color: var(--yellow);
+  background: var(--yellow-light);
+  transform: translateY(-2px);
+  box-shadow: 0 7px 20px rgba(242,195,0,0.18);
+}
+.tile.filled {
+  border-color: var(--black);
+  background: var(--yellow-light);
+}
+.tile-icon { font-size: 30px; display: block; margin-bottom: 8px; }
+.tile-name { font-size: 12px; font-weight: 700; color: var(--ink); }
+.tile-sub { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.filled-dot {
+  position: absolute; top: 9px; right: 9px;
+  width: 9px; height: 9px;
+  background: var(--green);
+  border-radius: 50%;
+  display: none;
+  box-shadow: 0 0 0 2px #fff;
+}
+.tile.filled .filled-dot { display: block; }
+
+/* PILLS */
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill {
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #f7f4ef;
+  color: var(--ink);
+  user-select: none;
+  transition: all .15s;
+}
+.pill input { display: none; }
+.pill:hover { border-color: #bbb; }
+.pill.selected { border-color: var(--black); background: var(--black); color: var(--yellow); font-weight: 700; }
+
+/* RATING */
+.rating-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.rating-card {
+  border: 2px solid var(--border);
+  border-radius: 13px;
+  padding: 14px 8px;
+  text-align: center;
+  cursor: pointer;
+  background: #f7f4ef;
+  transition: all .15s;
+  user-select: none;
+}
+.rating-card input { display: none; }
+.r-em { font-size: 28px; display: block; margin-bottom: 5px; }
+.r-label { font-size: 12px; font-weight: 700; color: var(--muted); }
+.rating-card:hover { border-color: var(--yellow); background: var(--yellow-light); }
+.rating-card.selected { border-color: var(--black); background: var(--black); }
+.rating-card.selected .r-label { color: var(--yellow); }
+
+/* OTHER TEXT */
+.other-input {
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 13px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  background: #f7f4ef;
+  outline: none;
+  width: 100%;
+  margin-top: 12px;
+  transition: border-color .18s;
+}
+.other-input:focus { border-color: var(--yellow); background: #fff; }
+
+/* SUBMIT */
+.submit-btn {
+  width: 100%;
+  background: var(--black);
+  color: var(--yellow);
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 13px;
+  padding: 17px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: opacity .2s, transform .1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.submit-btn:hover { opacity: 0.86; }
+.submit-btn:active { transform: scale(0.98); }
+
+.footer-note { text-align: center; font-size: 11px; color: #aaa; margin-top: 4px; }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8,8,8,0.58);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 470px;
+  overflow: hidden;
+  transform: translateY(22px) scale(0.96);
+  transition: transform .28s cubic-bezier(.16,1,.3,1);
+  box-shadow: 0 28px 72px rgba(0,0,0,0.28);
+}
+.modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+.modal-head {
+  background: var(--black);
+  border-bottom: 3px solid var(--yellow);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-head-left { display: flex; align-items: center; gap: 10px; }
+.modal-head-icon { font-size: 22px; }
+.modal-head-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #fff; }
+.modal-close {
+  background: rgba(255,255,255,0.13);
+  border: none; color: #fff;
+  width: 30px; height: 30px;
+  border-radius: 50%; cursor: pointer;
+  font-size: 17px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.25); }
+
+.modal-body { padding: 18px 20px 4px; }
+.modal-desc { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+
+.chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chip {
+  border: 2px solid var(--border);
+  border-radius: 9px;
+  padding: 6px 13px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #f7f4ef;
+  user-select: none;
+  transition: all .14s;
+}
+.chip input { display: none; }
+.chip:hover { border-color: #bbb; }
+.chip.on { border-color: var(--black); background: #f2c30026; color: var(--black); font-weight: 700; }
+
+.modal-textarea {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  height: 96px;
+  resize: vertical;
+  background: #f7f4ef;
+  outline: none;
+  transition: border-color .18s;
+}
+.modal-textarea:focus { border-color: var(--yellow); background: #fff; }
+.modal-hint { font-size: 11px; color: #bbb; margin-top: 6px; font-style: italic; padding-bottom: 4px; }
+
+/* MIC VOICE INPUT */
+.textarea-wrap { position: relative; }
+.mic-btn {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--black);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.mic-btn:hover { background: #333; transform: scale(1.09); }
+.mic-btn.listening { background: #e53e3e; animation: mic-pulse 1s infinite; }
+.mic-btn.translating { background: var(--yellow); color: var(--black); }
+@keyframes mic-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.45); }
+  50%      { box-shadow: 0 0 0 7px rgba(229,62,62,0); }
+}
+.mic-status {
+  font-size: 11px; min-height: 16px;
+  margin-top: 5px; font-style: italic;
+  color: var(--muted); transition: color .2s;
+}
+.mic-status.listening   { color: #e53e3e; font-weight: 700; font-style: normal; }
+.mic-status.translating { color: #d97706; font-weight: 700; font-style: normal; }
+.mic-status.done        { color: #16a34a; font-weight: 700; font-style: normal; }
+
+.lang-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.lang-picker-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.lang-select {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  background: #f7f4ef;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+  transition: border-color .18s;
+}
+.lang-select:focus { border-color: var(--yellow); }
+
+.modal-footer {
+  padding: 16px 20px 20px;
+  display: flex;
+  gap: 10px;
+}
+.btn-save {
+  flex: 1;
+  background: var(--black);
+  color: var(--yellow);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.btn-save:hover { opacity: 0.84; }
+.btn-cancel {
+  background: #f7f4ef;
+  border: 1.5px solid var(--border);
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  border-radius: 10px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background .14s;
+}
+.btn-cancel:hover { background: var(--border); }
+
+@media print {
+  body { background: #fff; }
+  .submit-btn, .modal-overlay { display: none !important; }
+  .page { max-width: 100%; padding: 0; margin: 0; gap: 8px; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+  .card-top { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tile.filled, .pill.selected, .rating-card.selected {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+}
+
+@media (max-width: 500px) {
+  .issue-grid { grid-template-columns: repeat(2, 1fr); }
+  .header { padding: 12px 16px; }
+  .header-text h1 { font-size: 15px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <img class="logo" src="" alt="LPU" onerror="this.style.display='none'">
+  <div class="header-text">
+    <h1>Parent Teacher Meet — Feedback Form</h1>
+    <p>Lovely Professional University</p>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- 1. Student Details -->
+  <div class="card">
+    <div class="card-top">
+      <span class="card-badge">Step 1</span>
+      <span class="card-title">Student Details</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label class="field-label">Registration No. <span style="color:#e53e3e">*</span></label>
+          <input type="text" id="regno" maxlength="8" inputmode="numeric"
+            placeholder="8-digit reg number"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+        </div>
+        <div class="field">
+          <label class="field-label">Dealing Official UID <span style="color:#e53e3e">*</span></label>
+          <input type="text" id="official-uid" maxlength="5" inputmode="numeric"
+            placeholder="5-digit UID"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Part A — Liked most -->
+  <div class="card">
+    <div class="card-top">
+      <span class="card-badge">Part A</span>
+      <span class="card-title">What did you like most about the PTM?</span>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <label class="field-label">Your Response</label>
+        <textarea id="partA" placeholder="Share what you appreciated most about this Parent-Teacher Meet…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Part B — Issues via tiles -->
+  <div class="card">
+    <div class="card-top">
+      <span class="card-badge">Part B</span>
+      <span class="card-title">Feedback / Suggestions / Concerns</span>
+    </div>
+    <div class="card-body">
+      <div class="issue-hint">
+        <span>👆</span>
+        Tap any category below to select topics &amp; describe your concern
+      </div>
+      <div class="issue-grid">
+        <div class="tile" id="tile-academic" onclick="openModal('academic')">
+          <div class="filled-dot"></div>
+          <span class="tile-icon">📚</span>
+          <div class="tile-name">Academics</div>
+          <div class="tile-sub">Exams · Fees · Records · Placement</div>
+        </div>
+        <div class="tile" id="tile-residential" onclick="openModal('residential')">
+          <div class="filled-dot"></div>
+          <span class="tile-icon">🏠</span>
+          <div class="tile-name">Residential</div>
+          <div class="tile-sub">Hostel · Mess · Laundry · Gym</div>
+        </div>
+        <div class="tile" id="tile-behavioural" onclick="openModal('behavioural')">
+          <div class="filled-dot"></div>
+          <span class="tile-icon">🧠</span>
+          <div class="tile-name">Behavioural</div>
+          <div class="tile-sub">Counselling · Discipline · Other</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Parent Contact -->
+  <div class="card">
+    <div class="card-top">
+      <span class="card-badge">Contact</span>
+      <span class="card-title">Parent Contact Update</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label class="field-label">Father Mobile No.</label>
+          <input type="text" id="father" inputmode="numeric" maxlength="15" placeholder="Father's number">
+        </div>
+        <div class="field">
+          <label class="field-label">Mother Mobile No.</label>
+          <input type="text" id="mother" inputmode="numeric" maxlength="15" placeholder="Mother's number">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Part C — Rating -->
+  <div class="card">
+    <div class="card-top">
+      <span class="card-badge">Part C</span>
+      <span class="card-title">Rate the Parent-Teacher Meet</span>
+    </div>
+    <div class="card-body">
+      <div class="rating-grid">
+        <label class="rating-card">
+          <input type="radio" name="rating" value="Satisfied">
+          <span class="r-em">😊</span>
+          <span class="r-label">Satisfied</span>
+        </label>
+        <label class="rating-card">
+          <input type="radio" name="rating" value="Average">
+          <span class="r-em">😐</span>
+          <span class="r-label">Average</span>
+        </label>
+        <label class="rating-card">
+          <input type="radio" name="rating" value="Dissatisfied">
+          <span class="r-em">😟</span>
+          <span class="r-label">Dissatisfied</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Mentor Contact -->
+  <div class="card">
+    <div class="card-top">
+      <span class="card-badge">Mentor</span>
+      <span class="card-title">Did mentor contact parents? (Freshers only)</span>
+    </div>
+    <div class="card-body">
+      <div class="pill-row">
+        <label class="pill"><input type="radio" name="mentor-contact" class="mentor-contact" value="Mother"> Mother</label>
+        <label class="pill"><input type="radio" name="mentor-contact" class="mentor-contact" value="Father"> Father</label>
+        <label class="pill"><input type="radio" name="mentor-contact" class="mentor-contact" value="Both Parents"> Both Parents</label>
+        <label class="pill"><input type="radio" name="mentor-contact" class="mentor-contact" value="Guardian"> Guardian</label>
+        <label class="pill"><input type="radio" name="mentor-contact" class="mentor-contact" value="Other" id="mentor-contact-other"> Other</label>
+        <label class="pill"><input type="radio" name="mentor-contact" class="mentor-contact" value="None"> None</label>
+      </div>
+      <div id="other-wrap" style="display:none;">
+        <input type="text" id="mentor-contact-other-text" class="other-input" placeholder="Please specify…">
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <button class="submit-btn" onclick="submitForm()">
+    Submit &amp; Download PDF &nbsp;→
+  </button>
+  <p class="footer-note">LPU PTM Feedback Form · Data submitted securely to Google Sheets</p>
+
+</div><!-- /.page -->
+
+
+<!-- ══════ MODAL: Academic ══════ -->
+<div class="modal-overlay" id="modal-academic">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <span class="modal-head-icon">📚</span>
+        <span class="modal-head-title">Academics Related</span>
+      </div>
+      <button class="modal-close" onclick="closeModal('academic')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">Select topics that apply, then describe your concern below.</p>
+      <div class="chip-grid">
+        <label class="chip"><input type="checkbox" class="query academic" value="Examination"> Examination</label>
+        <label class="chip"><input type="checkbox" class="query academic" value="Academics"> Academics</label>
+        <label class="chip"><input type="checkbox" class="query academic" value="Academic Support"> Academic Support</label>
+        <label class="chip"><input type="checkbox" class="query academic" value="Fee &amp; Scholarship"> Fee &amp; Scholarship</label>
+        <label class="chip"><input type="checkbox" class="query academic" value="Records"> Records</label>
+        <label class="chip"><input type="checkbox" class="query academic" value="Placement"> Placement</label>
+      </div>
+            <div class="lang-picker-wrap">
+        <span class="lang-picker-label">&#127908; Speak in:</span>
+        <select class="lang-select" onchange="selectedLang=this.value">
+          <option value="hi">Hindi</option>
+          <option value="pa">Punjabi</option>
+          <option value="ur">Urdu</option>
+          <option value="bn">Bengali</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+          <option value="mr">Marathi</option>
+          <option value="gu">Gujarati</option>
+          <option value="kn">Kannada</option>
+          <option value="ml">Malayalam</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="textarea-wrap">
+        <textarea class="modal-textarea" id="partB1" placeholder="Describe your academic concern or suggestion…" style="padding-right:50px;"></textarea>
+        <button class="mic-btn" id="mic-partB1" onclick="startVoice('partB1')" title="Speak in any language">🎤</button>
+      </div>
+      <p class="mic-status" id="status-partB1"></p>
+      <p class="modal-hint">e.g. "My child needs more support in Mathematics" or "Fee payment portal was unclear."</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('academic')">Cancel</button>
+      <button class="btn-save" onclick="saveModal('academic')">Save &amp; Close ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODAL: Residential ══════ -->
+<div class="modal-overlay" id="modal-residential">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <span class="modal-head-icon">🏠</span>
+        <span class="modal-head-title">Residential Services</span>
+      </div>
+      <button class="modal-close" onclick="closeModal('residential')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">Select topics that apply, then describe your concern below.</p>
+      <div class="chip-grid">
+        <label class="chip"><input type="checkbox" class="query residential" value="Residential Services"> Residential Services</label>
+        <label class="chip"><input type="checkbox" class="query residential" value="Mess"> Mess</label>
+        <label class="chip"><input type="checkbox" class="query residential" value="Laundry"> Laundry</label>
+        <label class="chip"><input type="checkbox" class="query residential" value="Gym Services"> Gym Services</label>
+      </div>
+            <div class="lang-picker-wrap">
+        <span class="lang-picker-label">&#127908; Speak in:</span>
+        <select class="lang-select" onchange="selectedLang=this.value">
+          <option value="hi">Hindi</option>
+          <option value="pa">Punjabi</option>
+          <option value="ur">Urdu</option>
+          <option value="bn">Bengali</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+          <option value="mr">Marathi</option>
+          <option value="gu">Gujarati</option>
+          <option value="kn">Kannada</option>
+          <option value="ml">Malayalam</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="textarea-wrap">
+        <textarea class="modal-textarea" id="partB2" placeholder="Describe your hostel / residential concern…" style="padding-right:50px;"></textarea>
+        <button class="mic-btn" id="mic-partB2" onclick="startVoice('partB2')" title="Speak in any language">🎤</button>
+      </div>
+      <p class="mic-status" id="status-partB2"></p>
+      <p class="modal-hint">e.g. "Mess food quality needs improvement" or "Laundry pickup schedule is inconsistent."</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('residential')">Cancel</button>
+      <button class="btn-save" onclick="saveModal('residential')">Save &amp; Close ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODAL: Behavioural ══════ -->
+<div class="modal-overlay" id="modal-behavioural">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <span class="modal-head-icon">🧠</span>
+        <span class="modal-head-title">Behavioural / Other</span>
+      </div>
+      <button class="modal-close" onclick="closeModal('behavioural')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">Select topics that apply, then describe your concern below.</p>
+      <div class="chip-grid">
+        <label class="chip"><input type="checkbox" class="query behavioural" value="Psychological Counselling"> Psychological Counselling</label>
+        <label class="chip"><input type="checkbox" class="query behavioural" value="Indiscipline"> Indiscipline</label>
+        <label class="chip"><input type="checkbox" class="query behavioural" value="Any Other"> Any Other</label>
+      </div>
+            <div class="lang-picker-wrap">
+        <span class="lang-picker-label">&#127908; Speak in:</span>
+        <select class="lang-select" onchange="selectedLang=this.value">
+          <option value="hi">Hindi</option>
+          <option value="pa">Punjabi</option>
+          <option value="ur">Urdu</option>
+          <option value="bn">Bengali</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+          <option value="mr">Marathi</option>
+          <option value="gu">Gujarati</option>
+          <option value="kn">Kannada</option>
+          <option value="ml">Malayalam</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="textarea-wrap">
+        <textarea class="modal-textarea" id="partB3" placeholder="Describe your concern here…" style="padding-right:50px;"></textarea>
+        <button class="mic-btn" id="mic-partB3" onclick="startVoice('partB3')" title="Speak in any language">🎤</button>
+      </div>
+      <p class="mic-status" id="status-partB3"></p>
+      <p class="modal-hint">e.g. "My child has been struggling emotionally" or "There have been peer behaviour issues."</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('behavioural')">Cancel</button>
+      <button class="btn-save" onclick="saveModal('behavioural')">Save &amp; Close ✓</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── Modal ───────────────────────────────────────
+function openModal(type) {
+  document.getElementById('modal-' + type).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(type) {
+  document.getElementById('modal-' + type).classList.remove('open');
+  document.body.style.overflow = '';
+}
+function saveModal(type) {
+  var textId = type === 'academic' ? 'partB1' : type === 'residential' ? 'partB2' : 'partB3';
+  var hasCheck = document.querySelectorAll('#modal-' + type + ' .chip input:checked').length > 0;
+  var hasText  = document.getElementById(textId).value.trim().length > 0;
+  var tile = document.getElementById('tile-' + type);
+  tile.classList.toggle('filled', hasCheck || hasText);
+  closeModal(type);
+}
+
+// close on backdrop click
+['academic','residential','behavioural'].forEach(function(t) {
+  var ov = document.getElementById('modal-' + t);
+  ov.addEventListener('click', function(e) { if (e.target === ov) closeModal(t); });
+});
+
+// ── Chips ────────────────────────────────────────
+document.querySelectorAll('.chip').forEach(function(chip) {
+  var cb = chip.querySelector('input[type="checkbox"]');
+  cb.addEventListener('change', function() { chip.classList.toggle('on', cb.checked); });
+});
+
+// ── Rating cards ─────────────────────────────────
+document.querySelectorAll('.rating-card').forEach(function(card) {
+  var radio = card.querySelector('input[type="radio"]');
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.rating-card').forEach(function(c) { c.classList.remove('selected'); });
+    if (radio.checked) card.classList.add('selected');
+  });
+});
+
+// ── Mentor pills ─────────────────────────────────
+document.querySelectorAll('.pill').forEach(function(pill) {
+  var radio = pill.querySelector('input[type="radio"]');
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('selected'); });
+    if (radio.checked) pill.classList.add('selected');
+    var isOther = document.getElementById('mentor-contact-other').checked;
+    document.getElementById('other-wrap').style.display = isOther ? 'block' : 'none';
+    if (!isOther) document.getElementById('mentor-contact-other-text').value = '';
+  });
+});
+
+// ── Voice Input ──────────────────────────────────
+var activeRecognition = null;
+
+function setMicStatus(textareaId, state, msg) {
+  var btn = document.getElementById('mic-' + textareaId);
+  var status = document.getElementById('status-' + textareaId);
+  if (!btn || !status) return;
+  btn.classList.remove('listening','translating');
+  status.classList.remove('listening','translating','done');
+  if (state === 'listening') { btn.classList.add('listening'); status.classList.add('listening'); btn.textContent = '⏹'; }
+  else if (state === 'translating') { btn.classList.add('translating'); status.classList.add('translating'); btn.textContent = '⏳'; }
+  else if (state === 'done') { status.classList.add('done'); btn.textContent = '🎤'; }
+  else { btn.textContent = '🎤'; }
+  status.textContent = msg || '';
+}
+
+// Language options for picker
+var LANG_OPTIONS = [
+  { code: 'hi', label: 'Hindi' },
+  { code: 'pa', label: 'Punjabi' },
+  { code: 'ur', label: 'Urdu' },
+  { code: 'bn', label: 'Bengali' },
+  { code: 'ta', label: 'Tamil' },
+  { code: 'te', label: 'Telugu' },
+  { code: 'mr', label: 'Marathi' },
+  { code: 'gu', label: 'Gujarati' },
+  { code: 'kn', label: 'Kannada' },
+  { code: 'ml', label: 'Malayalam' },
+  { code: 'en', label: 'English' },
+];
+
+// Map lang code -> BCP-47 for recognition
+var LANG_BCP47 = {
+  hi: 'hi-IN', pa: 'pa-IN', ur: 'ur-PK', bn: 'bn-IN',
+  ta: 'ta-IN', te: 'te-IN', mr: 'mr-IN', gu: 'gu-IN',
+  kn: 'kn-IN', ml: 'ml-IN', en: 'en-US'
+};
+
+var selectedLang = 'hi'; // default
+
+async function translateToEnglish(text, langCode) {
+  if (langCode === 'en') return text; // already english
+  try {
+    var url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + langCode + '|en';
+    var res = await fetch(url);
+    var data = await res.json();
+    if (data && data.responseData && data.responseData.translatedText) {
+      var translated = data.responseData.translatedText;
+      if (translated.toUpperCase().includes('PLEASE SELECT') || translated.toUpperCase().includes('INVALID')) return text;
+      return translated;
+    }
+    return text;
+  } catch(e) {
+    return text;
+  }
+}
+
+function startVoice(textareaId) {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Voice input not supported. Please use Chrome on Android or desktop.');
+    return;
+  }
+
+  // Stop if already listening
+  if (activeRecognition) {
+    try { activeRecognition.stop(); } catch(e) {}
+    activeRecognition = null;
+    setMicStatus(textareaId, 'idle', '');
+    return;
+  }
+
+  var ta = document.getElementById(textareaId);
+  if (!ta.value.trim()) ta.dataset.base = '';
+
+  var recognition = new SpeechRecognition();
+  activeRecognition = recognition;
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.lang = LANG_BCP47[selectedLang] || 'hi-IN';
+
+  var langObj = LANG_OPTIONS.find(function(l){ return l.code === selectedLang; });
+  var langLabel = langObj ? langObj.label : 'Selected';
+  setMicStatus(textareaId, 'listening', '🎙 Listening in ' + langLabel + '... speak now');
+
+  var gotResult = false;
+
+  recognition.onstart = function() { gotResult = false; };
+
+  recognition.onresult = function(event) {
+    gotResult = true;
+    var interim = '';
+    var finalText = '';
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) { finalText += event.results[i][0].transcript; }
+      else { interim += event.results[i][0].transcript; }
+    }
+    if (interim) {
+      var base = ta.dataset.base || '';
+      ta.value = base ? base.trim() + ' ' + interim : interim;
+    }
+    if (finalText) {
+      try { recognition.stop(); } catch(e) {}
+      activeRecognition = null;
+      setMicStatus(textareaId, 'translating', '⚙ Translating to English...');
+      translateToEnglish(finalText, selectedLang).then(function(translated) {
+        var existing = ta.dataset.base || '';
+        var newVal = existing ? existing.trim() + ' ' + translated : translated;
+        ta.value = newVal;
+        ta.dataset.base = newVal;
+        setMicStatus(textareaId, 'done', '✓ Done! Tap mic to add more');
+        setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
+      });
+    }
+  };
+
+  recognition.onerror = function(event) {
+    activeRecognition = null;
+    var msg = event.error === 'no-speech'   ? 'No speech heard. Try again.' :
+              event.error === 'not-allowed' ? 'Mic blocked. Allow mic in browser settings.' :
+              event.error === 'network'     ? 'Network error. Check internet.' :
+              event.error === 'aborted'     ? '' : 'Error: ' + event.error;
+    setMicStatus(textareaId, 'idle', msg ? '⚠ ' + msg : '');
+    setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
+  };
+
+  recognition.onend = function() {
+    // Small delay for Android where onend fires before onresult
+    setTimeout(function() {
+      if (activeRecognition === recognition) {
+        activeRecognition = null;
+        setMicStatus(textareaId, 'idle', '');
+      }
+    }, 400);
+  };
+
+  try {
+    recognition.start();
+  } catch(e) {
+    activeRecognition = null;
+    setMicStatus(textareaId, 'idle', '⚠ Could not start mic. Try again.');
+  }
+}
+
+function getVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+
+// ── Submit ───────────────────────────────────────
+function submitForm() {
+  var reg = getVal('regno');
+  if (!/^\d{8}$/.test(reg)) { alert('Registration Number must be exactly 8 digits.'); return; }
+
+  var officialUid = getVal('official-uid');
+  if (!/^\d{5}$/.test(officialUid)) { alert('UID must be exactly 5 digits.'); return; }
+
+  var partA  = getVal('partA');
+  var father = getVal('father');
+  var mother = getVal('mother');
+
+  var rating = '';
+  document.getElementsByName('rating').forEach(function(r) { if (r.checked) rating = r.value; });
+
+  var mentorContactOther     = document.getElementById('mentor-contact-other');
+  var mentorContactOtherText = document.getElementById('mentor-contact-other-text');
+  var mentorVals = [];
+  document.querySelectorAll('.mentor-contact:checked').forEach(function(cb) { mentorVals.push(cb.value); });
+  if (mentorContactOther && mentorContactOther.checked && mentorContactOtherText.value.trim() === '') {
+    alert('Please specify the Other contact.'); return;
+  }
+  var mentorContact = (mentorContactOther && mentorContactOther.checked)
+    ? mentorContactOtherText.value.trim()
+    : mentorVals.join(', ');
+
+  var rows = [];
+  document.querySelectorAll('.query:checked').forEach(function(cb) {
+    var txt = '';
+    if (cb.classList.contains('academic'))    txt = getVal('partB1');
+    if (cb.classList.contains('residential')) txt = getVal('partB2');
+    if (cb.classList.contains('behavioural')) txt = getVal('partB3');
+    rows.push({
+      regno: reg, query: cb.value, queryText: txt,
+      partA: partA, rating: rating, mentorContact: mentorContact,
+      father: father, mother: mother, officialUid: officialUid
+    });
+  });
+
+  if (rows.length === 0) {
+    alert('Please open at least one issue category and select a topic.'); return;
+  }
+
+  // Submit to Google Sheets
+  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec', {
+    method: 'POST', mode: 'no-cors', body: JSON.stringify({ rows: rows })
+  });
+
+  // PDF export
+  var el = document.querySelector('.page');
+  html2pdf().set({
+    margin: 0.4,
+    filename: reg + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  }).from(el).save().then(function() {
+    // Reset form
+    document.querySelectorAll('input').forEach(function(el) {
+      if (el.type === 'text') el.value = '';
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+    });
+    document.querySelectorAll('textarea').forEach(function(t) { t.value = ''; });
+    document.querySelectorAll('.pill, .rating-card, .chip').forEach(function(el) { el.classList.remove('selected','on'); });
+    document.querySelectorAll('.tile').forEach(function(t) { t.classList.remove('filled'); });
+    document.getElementById('other-wrap').style.display = 'none';
+    alert('Submitted & PDF Downloaded Successfully!');
+  });
+}
+</script>
+</body>
+</html>
