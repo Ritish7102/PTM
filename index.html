@@ -257,26 +257,25 @@ body {
 .search-results { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
 .result-row {
   border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px;
-  background: #f7f4ef; cursor: pointer; transition: all .15s;
-  display: flex; justify-content: space-between; align-items: center;
+  background: #f7f4ef; display: flex; justify-content: space-between; align-items: center;
 }
 .result-row:hover { border-color: var(--yellow); background: var(--yellow-light); }
-.result-row .rr-left { font-size: 13px; font-weight: 600; color: var(--ink); }
-.result-row .rr-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.rr-left { font-size: 13px; font-weight: 600; color: var(--ink); }
+.rr-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .rr-btn {
   background: var(--black); color: var(--yellow); font-size: 11px; font-weight: 700;
-  border: none; border-radius: 7px; padding: 5px 12px; cursor: pointer;
-  font-family: 'Syne', sans-serif; white-space: nowrap;
+  border: none; border-radius: 7px; padding: 6px 14px; cursor: pointer;
+  font-family: 'Syne', sans-serif; white-space: nowrap; flex-shrink: 0;
 }
 .edit-banner {
   background: var(--yellow); color: var(--black); font-size: 12px; font-weight: 700;
-  padding: 8px 14px; border-radius: 8px; margin-bottom: 14px;
+  padding: 9px 14px; border-radius: 9px; margin-bottom: 14px;
   display: none; align-items: center; gap: 8px;
 }
 .edit-banner.show { display: flex; }
 .edit-cancel-btn {
   margin-left: auto; background: var(--black); color: var(--yellow);
-  border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px;
+  border: none; border-radius: 6px; padding: 5px 12px; font-size: 11px;
   font-weight: 700; cursor: pointer; font-family: 'Syne', sans-serif;
 }
 .submit-btn {
@@ -529,18 +528,18 @@ body {
 
 <div class="page">
 
-  <!-- 0. Search & Edit -->
-  <div class="card" id="search-card">
+  <!-- Search Card -->
+  <div class="card">
     <div class="card-top">
       <span class="card-badge">Search</span>
       <span class="card-title">Edit Existing Submission</span>
     </div>
     <div class="card-body">
       <div class="search-bar">
-        <input type="text" id="search-regno" inputmode="numeric" maxlength="8" placeholder="Enter Reg No to search...">
+        <input type="text" id="search-regno" inputmode="numeric" maxlength="8" placeholder="Enter 8-digit Reg No...">
         <button class="search-btn" onclick="searchByRegno()">Search</button>
       </div>
-      <div class="search-results" id="search-results"></div>
+      <div id="search-results" class="search-results"></div>
     </div>
   </div>
 
@@ -552,8 +551,8 @@ body {
     </div>
     <div class="card-body">
       <div class="edit-banner" id="edit-banner">
-        Editing: <span id="edit-query-label"></span>
-        <button class="edit-cancel-btn" onclick="cancelEdit()">Cancel Edit</button>
+        📋 Pre-filled from previous record: <span id="edit-query-label" style="margin-left:4px;"></span>
+        <button class="edit-cancel-btn" onclick="cancelEdit()">Clear</button>
       </div>
       <div class="row">
         <div class="field">
@@ -1058,25 +1057,28 @@ function translateNow(textareaId) {
   });
 }
 
-var editRowIndex = null;
+var _searchRows = [];
 
 function searchByRegno() {
   var regno = document.getElementById('search-regno').value.trim();
-  if (!/^\d{8}$/.test(regno)) { alert('Please enter a valid 8-digit Reg No.'); return; }
+  if (!/^\d{8}$/.test(regno)) { alert('Enter a valid 8-digit Reg No.'); return; }
   var div = document.getElementById('search-results');
-  div.innerHTML = '<p style="font-size:13px;color:var(--muted)">Searching...</p>';
-  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec?regno=' + regno)
-    .then(function(res) { return res.json(); })
-    .then(function(rows) {
+  div.innerHTML = '<p style="font-size:13px;color:var(--muted);margin-top:8px;">Searching...</p>';
+  var url = 'https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec?regno=' + encodeURIComponent(regno);
+  fetch(url, { redirect: 'follow' })
+    .then(function(res) { return res.text(); })
+    .then(function(text) {
+      var rows = JSON.parse(text.trim());
+      _searchRows = rows;
       if (!rows || rows.length === 0) {
-        div.innerHTML = '<p style="font-size:13px;color:#e53e3e">No records found for Reg No: ' + regno + '</p>';
+        div.innerHTML = '<p style="font-size:13px;color:#e53e3e;margin-top:8px;">No records found for: ' + regno + '</p>';
         return;
       }
       var html = '';
       rows.forEach(function(row, idx) {
-        var preview = row.queryText ? row.queryText.toString().substring(0,45) + '...' : 'No text';
+        var preview = row.queryText ? String(row.queryText).substring(0,40) + '...' : 'No text';
         html += '<div class="result-row">'
-          + '<div>'
+          + '<div style="flex:1;min-width:0;">'
           + '<div class="rr-left">' + (row.query || 'N/A') + '</div>'
           + '<div class="rr-sub">Rating: ' + (row.rating || '-') + ' | ' + preview + '</div>'
           + '</div>'
@@ -1084,43 +1086,34 @@ function searchByRegno() {
           + '</div>';
       });
       div.innerHTML = html;
-      window._searchRows = rows;
     })
-    .catch(function() {
-      div.innerHTML = '<p style="font-size:13px;color:#e53e3e">Error fetching. Check internet.</p>';
+    .catch(function(err) {
+      div.innerHTML = '<p style="font-size:13px;color:#e53e3e;margin-top:8px;">Error: ' + err.message + '</p>';
     });
 }
 
 function loadEditRow(idx) {
-  var row = window._searchRows[idx];
-  editRowIndex = row._rowIndex;
-
-  // Fill fields
-  document.getElementById('regno').value = row.regno || '';
+  var row = _searchRows[idx];
+  if (!row) return;
+  document.getElementById('regno').value        = row.regno || '';
   document.getElementById('official-uid').value = row.officialUid || '';
-  document.getElementById('partA').value = row.partA || '';
-  document.getElementById('father').value = row.father || '';
-  document.getElementById('mother').value = row.mother || '';
-
-  // Rating
+  document.getElementById('partA').value        = row.partA || '';
+  document.getElementById('father').value       = row.father || '';
+  document.getElementById('mother').value       = row.mother || '';
   document.querySelectorAll('.rating-card').forEach(function(card) {
     card.classList.remove('selected');
     var r = card.querySelector('input[type="radio"]');
     if (r && r.value === row.rating) { r.checked = true; card.classList.add('selected'); }
   });
-
-  // Mentor
   document.querySelectorAll('.pill').forEach(function(pill) {
     pill.classList.remove('selected');
     var r = pill.querySelector('input[type="radio"]');
     if (r && r.value === row.mentorContact) { r.checked = true; pill.classList.add('selected'); }
   });
-
-  // Part B - fill correct category
   var academic    = ['Examination','Academics','Academic Support','Fee & Scholarship','Records','Placement'];
   var residential = ['Residential Services','Mess','Laundry','Gym Services'];
   var behavioural = ['Psychological Counselling','Indiscipline','Any Other'];
-  var cat = academic.indexOf(row.query) !== -1 ? 'academic'
+  var cat = academic.indexOf(row.query) !== -1    ? 'academic'
           : residential.indexOf(row.query) !== -1 ? 'residential'
           : behavioural.indexOf(row.query) !== -1 ? 'behavioural' : '';
   var taId = cat === 'academic' ? 'partB1' : cat === 'residential' ? 'partB2' : 'partB3';
@@ -1128,29 +1121,30 @@ function loadEditRow(idx) {
     document.getElementById(taId).value = row.queryText || '';
     document.getElementById(taId).dataset.base = row.queryText || '';
     document.querySelectorAll('.query.' + cat).forEach(function(cb) {
-      if (cb.value === row.query) { cb.checked = true; cb.closest('.chip').classList.add('on'); }
+      if (cb.value === row.query) {
+        cb.checked = true;
+        var chip = cb.closest('.chip');
+        if (chip) chip.classList.add('on');
+      }
     });
     var tile = document.getElementById('tile-' + cat);
     if (tile) tile.classList.add('filled');
   }
-
-  // Show edit banner
   document.getElementById('edit-banner').classList.add('show');
-  document.getElementById('edit-query-label').textContent = row.query + ' (Row ' + row._rowIndex + ')';
+  document.getElementById('edit-query-label').textContent = (row.query || '') + ' (Row ' + row._rowIndex + ')';
   document.getElementById('search-results').innerHTML = '';
   document.getElementById('search-regno').value = '';
   document.getElementById('regno').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function cancelEdit() {
-  editRowIndex = null;
   document.getElementById('edit-banner').classList.remove('show');
   document.querySelectorAll('input').forEach(function(el) {
     if (el.type === 'text') el.value = '';
     if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
   });
   document.querySelectorAll('textarea').forEach(function(t) { t.value = ''; });
-  document.querySelectorAll('.pill, .rating-card, .chip').forEach(function(el) { el.classList.remove('selected','on'); });
+  document.querySelectorAll('.pill,.rating-card,.chip').forEach(function(el) { el.classList.remove('selected','on'); });
   document.querySelectorAll('.tile').forEach(function(t) { t.classList.remove('filled'); });
   document.getElementById('other-wrap').style.display = 'none';
 }
@@ -1189,13 +1183,11 @@ function submitForm() {
     if (cb.classList.contains('academic'))    txt = getVal('partB1');
     if (cb.classList.contains('residential')) txt = getVal('partB2');
     if (cb.classList.contains('behavioural')) txt = getVal('partB3');
-    var rowData = {
+    rows.push({
       regno: reg, query: cb.value, queryText: txt,
       partA: partA, rating: rating, mentorContact: mentorContact,
       father: father, mother: mother, officialUid: officialUid
-    };
-    if (editRowIndex) rowData._rowIndex = editRowIndex;
-    rows.push(rowData);
+    });
   });
 
   if (rows.length === 0) {
@@ -1203,7 +1195,7 @@ function submitForm() {
   }
 
   // Submit to Google Sheets
-  fetch('https://script.google.com/macros/s/AKfycbyPMZJRZhu5tEoPG_E0TlswstJSCnkqYktFM3G9pwgNOTNV2ujqHsAeRtQh-D0v9xHS/exec', {
+  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec', {
     method: 'POST', mode: 'no-cors', body: JSON.stringify({ rows: rows })
   });
 
@@ -1216,10 +1208,7 @@ function submitForm() {
   document.querySelectorAll('.pill, .rating-card, .chip').forEach(function(el) { el.classList.remove('selected','on'); });
   document.querySelectorAll('.tile').forEach(function(t) { t.classList.remove('filled'); });
   document.getElementById('other-wrap').style.display = 'none';
-  var msg = editRowIndex ? 'Record Updated Successfully! ✅' : 'Submitted Successfully! ✅';
-  editRowIndex = null;
-  document.getElementById('edit-banner').classList.remove('show');
-  alert(msg);
+  alert('Submitted Successfully! ✅');
 }
 </script>
 </body>
