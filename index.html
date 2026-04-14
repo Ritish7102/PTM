@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script> -->
 <title>LPU PTM Feedback</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700;800&display=swap');
@@ -444,21 +443,6 @@ body {
   transition: background .14s;
 }
 .btn-cancel:hover { background: var(--border); }
-.btn-translate {
-  flex: 1;
-  background: var(--yellow);
-  color: var(--black);
-  font-family: 'Syne', sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  border: none;
-  border-radius: 10px;
-  padding: 12px;
-  cursor: pointer;
-  transition: opacity .15s;
-}
-.btn-translate:hover { opacity: 0.84; }
-.btn-translate:disabled { opacity: 0.4; cursor: not-allowed; }
 
 @media print {
   body { background: #fff; }
@@ -685,7 +669,6 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('academic')">Cancel</button>
-      <button class="btn-translate" id="btn-translate-partB1" onclick="translateAndSave('academic','partB1')" disabled>🌐 Translate</button>
       <button class="btn-save" onclick="saveModal('academic')">Save &amp; Close ✓</button>
     </div>
   </div>
@@ -734,7 +717,6 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('residential')">Cancel</button>
-      <button class="btn-translate" id="btn-translate-partB2" onclick="translateAndSave('residential','partB2')" disabled>🌐 Translate</button>
       <button class="btn-save" onclick="saveModal('residential')">Save &amp; Close ✓</button>
     </div>
   </div>
@@ -782,7 +764,6 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('behavioural')">Cancel</button>
-      <button class="btn-translate" id="btn-translate-partB3" onclick="translateAndSave('behavioural','partB3')" disabled>🌐 Translate</button>
       <button class="btn-save" onclick="saveModal('behavioural')">Save &amp; Close ✓</button>
     </div>
   </div>
@@ -882,7 +863,7 @@ var LANG_BCP47 = {
 var selectedLang = 'hi'; // default
 
 async function translateToEnglish(text, langCode) {
-  if (langCode === 'en') return text;
+  if (langCode === 'en') return text; // already english
   try {
     var url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + langCode + '|en';
     var res = await fetch(url);
@@ -893,28 +874,9 @@ async function translateToEnglish(text, langCode) {
       return translated;
     }
     return text;
-  } catch(e) { return text; }
-}
-
-// Stores raw spoken text per textarea (before translation)
-var spokenBuffer = {};
-var activeMicTextarea = null;
-
-// Called by Translate button ONLY - no auto translate
-async function translateAndSave(modalType, textareaId) {
-  var ta = document.getElementById(textareaId);
-  var raw = (spokenBuffer[textareaId] || '').trim() || ta.value.trim();
-  if (!raw) { alert('Nothing to translate. Please speak first.'); return; }
-  var btn = document.getElementById('btn-translate-' + textareaId);
-  if (btn) { btn.disabled = true; btn.textContent = 'Translating...'; }
-  setMicStatus(textareaId, 'translating', 'Translating to English...');
-  var translated = await translateToEnglish(raw, selectedLang);
-  ta.value = translated;
-  ta.dataset.base = translated;
-  spokenBuffer[textareaId] = '';
-  if (btn) { btn.disabled = false; btn.textContent = 'Translate'; }
-  setMicStatus(textareaId, 'done', 'Translated successfully!');
-  setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 2500);
+  } catch(e) {
+    return text;
+  }
 }
 
 function startVoice(textareaId) {
@@ -928,21 +890,15 @@ function startVoice(textareaId) {
   if (activeRecognition) {
     try { activeRecognition.stop(); } catch(e) {}
     activeRecognition = null;
-    activeMicTextarea = null;
     setMicStatus(textareaId, 'idle', '');
     return;
   }
 
   var ta = document.getElementById(textareaId);
-  if (!ta.value.trim()) {
-    spokenBuffer[textareaId] = '';
-    ta.dataset.base = '';
-  }
+  if (!ta.value.trim()) ta.dataset.base = '';
 
   var recognition = new SpeechRecognition();
   activeRecognition = recognition;
-  activeMicTextarea = textareaId;
-
   recognition.continuous = false;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
@@ -950,73 +906,66 @@ function startVoice(textareaId) {
 
   var langObj = LANG_OPTIONS.find(function(l){ return l.code === selectedLang; });
   var langLabel = langObj ? langObj.label : 'Selected';
-  setMicStatus(textareaId, 'listening', 'Listening in ' + langLabel + '... speak now');
+  setMicStatus(textareaId, 'listening', '🎙 Listening in ' + langLabel + '... speak now');
 
-  // Disable translate btn while listening
-  var tBtn = document.getElementById('btn-translate-' + textareaId);
-  if (tBtn) tBtn.disabled = true;
+  var gotResult = false;
+
+  recognition.onstart = function() { gotResult = false; };
 
   recognition.onresult = function(event) {
+    gotResult = true;
     var interim = '';
     var finalText = '';
-    // Use event.resultIndex - only reads NEW results, prevents duplicates
     for (var i = event.resultIndex; i < event.results.length; i++) {
-      if (event.results[i].isFinal) {
-        finalText += event.results[i][0].transcript;
-      } else {
-        interim += event.results[i][0].transcript;
-      }
+      if (event.results[i].isFinal) { finalText += event.results[i][0].transcript; }
+      else { interim += event.results[i][0].transcript; }
     }
-    // Show live interim preview
     if (interim) {
       var base = ta.dataset.base || '';
-      ta.value = (base ? base.trim() + ' ' : '') + interim;
+      ta.value = base ? base.trim() + ' ' + interim : interim;
     }
-    // On final: append to base and save to buffer
     if (finalText) {
-      var existing = ta.dataset.base || '';
-      var newBase = (existing ? existing.trim() + ' ' : '') + finalText.trim();
-      ta.value = newBase;
-      ta.dataset.base = newBase;
-      spokenBuffer[textareaId] = newBase;
+      try { recognition.stop(); } catch(e) {}
+      activeRecognition = null;
+      setMicStatus(textareaId, 'translating', '⚙ Translating to English...');
+      translateToEnglish(finalText, selectedLang).then(function(translated) {
+        var existing = ta.dataset.base || '';
+        var newVal = existing ? existing.trim() + ' ' + translated : translated;
+        ta.value = newVal;
+        ta.dataset.base = newVal;
+        setMicStatus(textareaId, 'done', '✓ Done! Tap mic to add more');
+        setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
+      });
     }
   };
 
   recognition.onerror = function(event) {
     activeRecognition = null;
-    activeMicTextarea = null;
     var msg = event.error === 'no-speech'   ? 'No speech heard. Try again.' :
-              event.error === 'not-allowed' ? 'Mic blocked. Allow in browser settings.' :
+              event.error === 'not-allowed' ? 'Mic blocked. Allow mic in browser settings.' :
               event.error === 'network'     ? 'Network error. Check internet.' :
               event.error === 'aborted'     ? '' : 'Error: ' + event.error;
-    setMicStatus(textareaId, 'idle', msg ? msg : '');
-    setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3000);
-    var tBtn2 = document.getElementById('btn-translate-' + textareaId);
-    if (tBtn2 && spokenBuffer[textareaId]) tBtn2.disabled = false;
+    setMicStatus(textareaId, 'idle', msg ? '⚠ ' + msg : '');
+    setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
   };
 
   recognition.onend = function() {
-    activeRecognition = null;
-    activeMicTextarea = null;
-    var tBtn2 = document.getElementById('btn-translate-' + textareaId);
-    if (tBtn2 && spokenBuffer[textareaId]) {
-      tBtn2.disabled = false;
-      setMicStatus(textareaId, 'done', 'Done! Tap mic to add more or press Translate');
-      setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3000);
-    } else {
-      setMicStatus(textareaId, 'idle', '');
-    }
+    // Small delay for Android where onend fires before onresult
+    setTimeout(function() {
+      if (activeRecognition === recognition) {
+        activeRecognition = null;
+        setMicStatus(textareaId, 'idle', '');
+      }
+    }, 400);
   };
 
   try {
     recognition.start();
   } catch(e) {
     activeRecognition = null;
-    activeMicTextarea = null;
-    setMicStatus(textareaId, 'idle', 'Could not start mic. Try again.');
+    setMicStatus(textareaId, 'idle', '⚠ Could not start mic. Try again.');
   }
 }
-
 
 function getVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
 
@@ -1068,7 +1017,7 @@ function submitForm() {
     method: 'POST', mode: 'no-cors', body: JSON.stringify({ rows: rows })
   });
 
-// Reset form
+  // Reset form
   document.querySelectorAll('input').forEach(function(el) {
     if (el.type === 'text') el.value = '';
     if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
