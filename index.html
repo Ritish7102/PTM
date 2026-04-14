@@ -1195,20 +1195,31 @@ function submitForm() {
   }
 
   // Submit to Google Sheets
-  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec', {
-    method: 'POST', mode: 'no-cors', body: JSON.stringify({ rows: rows })
-  });
+  var submitBtn = document.querySelector('.submit-btn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
 
-// Reset form
-  document.querySelectorAll('input').forEach(function(el) {
-    if (el.type === 'text') el.value = '';
-    if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec', {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ rows: rows })
+  }).then(function() {
+    // Reset form after successful send
+    document.querySelectorAll('input').forEach(function(el) {
+      if (el.type === 'text') el.value = '';
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+    });
+    document.querySelectorAll('textarea').forEach(function(t) { t.value = ''; });
+    document.querySelectorAll('.pill, .rating-card, .chip').forEach(function(el) { el.classList.remove('selected','on'); });
+    document.querySelectorAll('.tile').forEach(function(t) { t.classList.remove('filled'); });
+    document.getElementById('other-wrap').style.display = 'none';
+    var eb = document.getElementById('edit-banner');
+    if (eb) eb.classList.remove('show');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit ✅'; }
+    alert('Submitted Successfully! ✅');
+  }).catch(function(err) {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit ✅'; }
+    alert('Error submitting. Please try again.');
   });
-  document.querySelectorAll('textarea').forEach(function(t) { t.value = ''; });
-  document.querySelectorAll('.pill, .rating-card, .chip').forEach(function(el) { el.classList.remove('selected','on'); });
-  document.querySelectorAll('.tile').forEach(function(t) { t.classList.remove('filled'); });
-  document.getElementById('other-wrap').style.display = 'none';
-  alert('Submitted Successfully! ✅');
 }
 </script>
 </body>
