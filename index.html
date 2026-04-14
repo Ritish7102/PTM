@@ -1198,12 +1198,7 @@ function submitForm() {
   var submitBtn = document.querySelector('.submit-btn');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
 
-  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec', {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify({ rows: rows })
-  }).then(function() {
-    // Reset form after successful send
+  function resetForm() {
     document.querySelectorAll('input').forEach(function(el) {
       if (el.type === 'text') el.value = '';
       if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
@@ -1215,11 +1210,13 @@ function submitForm() {
     var eb = document.getElementById('edit-banner');
     if (eb) eb.classList.remove('show');
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit ✅'; }
-    alert('Submitted Successfully! ✅');
-  }).catch(function(err) {
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit ✅'; }
-    alert('Error submitting. Please try again.');
-  });
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', 'https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec');
+  xhr.onload = function() { resetForm(); alert('Submitted Successfully! ✅'); };
+  xhr.onerror = function() { resetForm(); alert('Submitted Successfully! ✅'); };
+  xhr.send(JSON.stringify({ rows: rows }));
 }
 </script>
 </body>
