@@ -1213,7 +1213,7 @@ function submitForm() {
   }
 
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', 'https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec');
+  xhr.open('POST', 'https://script.google.com/macros/s/AKfycbw4_e1uwIFO60Q5jo9Kmk0U2eEAfoTt_d0_tjwQWYabcy-88LCLJyKbknWDMYYkIeM/exec');
   xhr.onload = function() { resetForm(); alert('Submitted Successfully! ✅'); };
   xhr.onerror = function() { resetForm(); alert('Submitted Successfully! ✅'); };
   xhr.send(JSON.stringify({ rows: rows }));
