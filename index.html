@@ -908,39 +908,70 @@ function startVoice(textareaId) {
   var langLabel = langObj ? langObj.label : 'Selected';
   setMicStatus(textareaId, 'listening', '🎙 Listening in ' + langLabel + '... speak now');
 
-  var gotResult = false;
+  var lastInterim = '';
+  var silenceTimer = null;
+  var translated = false;
 
-  recognition.onstart = function() { gotResult = false; };
+  // Clear silence timer helper
+  function clearSilence() {
+    if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+  }
+
+  // This runs the translation - works for both final and interim fallback
+  function processText(text) {
+    if (translated) return; // prevent double translation
+    translated = true;
+    clearSilence();
+    try { recognition.stop(); } catch(e) {}
+    activeRecognition = null;
+    setMicStatus(textareaId, 'translating', '⚙ Translating to English...');
+    translateToEnglish(text, selectedLang).then(function(result) {
+      var existing = ta.dataset.base || '';
+      var newVal = existing ? existing.trim() + ' ' + result : result;
+      ta.value = newVal;
+      ta.dataset.base = newVal;
+      setMicStatus(textareaId, 'done', '✓ Done! Tap mic to add more');
+      setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
+    });
+  }
 
   recognition.onresult = function(event) {
-    gotResult = true;
+    clearSilence();
     var interim = '';
     var finalText = '';
+
     for (var i = event.resultIndex; i < event.results.length; i++) {
-      if (event.results[i].isFinal) { finalText += event.results[i][0].transcript; }
-      else { interim += event.results[i][0].transcript; }
+      if (event.results[i].isFinal) {
+        finalText += event.results[i][0].transcript;
+      } else {
+        interim += event.results[i][0].transcript;
+      }
     }
+
+    // Show interim preview
     if (interim) {
+      lastInterim = interim;
       var base = ta.dataset.base || '';
       ta.value = base ? base.trim() + ' ' + interim : interim;
+
+      // Silence timer: if no new result in 2 seconds, auto-stop and translate
+      silenceTimer = setTimeout(function() {
+        if (!translated && lastInterim) {
+          processText(lastInterim);
+        }
+      }, 2000);
     }
+
+    // If we got a final result immediately (phone), process right away
     if (finalText) {
-      try { recognition.stop(); } catch(e) {}
-      activeRecognition = null;
-      setMicStatus(textareaId, 'translating', '⚙ Translating to English...');
-      translateToEnglish(finalText, selectedLang).then(function(translated) {
-        var existing = ta.dataset.base || '';
-        var newVal = existing ? existing.trim() + ' ' + translated : translated;
-        ta.value = newVal;
-        ta.dataset.base = newVal;
-        setMicStatus(textareaId, 'done', '✓ Done! Tap mic to add more');
-        setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
-      });
+      processText(finalText);
     }
   };
 
   recognition.onerror = function(event) {
+    clearSilence();
     activeRecognition = null;
+    translated = true; // prevent onend from re-triggering
     var msg = event.error === 'no-speech'   ? 'No speech heard. Try again.' :
               event.error === 'not-allowed' ? 'Mic blocked. Allow mic in browser settings.' :
               event.error === 'network'     ? 'Network error. Check internet.' :
@@ -950,13 +981,17 @@ function startVoice(textareaId) {
   };
 
   recognition.onend = function() {
-    // Small delay for Android where onend fires before onresult
+    clearSilence();
+    // If recognition ended but we have interim text and no translation yet
+    // This handles tablets where isFinal never fires
     setTimeout(function() {
-      if (activeRecognition === recognition) {
-        activeRecognition = null;
+      if (!translated && lastInterim) {
+        processText(lastInterim);
+      } else if (!translated) {
+        if (activeRecognition === recognition) activeRecognition = null;
         setMicStatus(textareaId, 'idle', '');
       }
-    }, 400);
+    }, 300);
   };
 
   try {
@@ -966,6 +1001,7 @@ function startVoice(textareaId) {
     setMicStatus(textareaId, 'idle', '⚠ Could not start mic. Try again.');
   }
 }
+
 
 function getVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
 
