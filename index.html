@@ -896,15 +896,15 @@ async function translateToEnglish(text, langCode) {
   } catch(e) { return text; }
 }
 
-// Buffer stores raw spoken text per textarea (before translation)
+// Stores raw spoken text per textarea (before translation)
 var spokenBuffer = {};
 var activeMicTextarea = null;
 
-// Called by Translate button — translates buffer content and puts in textarea
+// Called by Translate button ONLY - no auto translate
 async function translateAndSave(modalType, textareaId) {
   var ta = document.getElementById(textareaId);
   var raw = (spokenBuffer[textareaId] || '').trim() || ta.value.trim();
-  if (!raw) return;
+  if (!raw) { alert('Nothing to translate. Please speak first.'); return; }
   var btn = document.getElementById('btn-translate-' + textareaId);
   if (btn) { btn.disabled = true; btn.textContent = 'Translating...'; }
   setMicStatus(textareaId, 'translating', 'Translating to English...');
@@ -924,90 +924,87 @@ function startVoice(textareaId) {
     return;
   }
 
-  // STOP if already listening on this textarea
-  if (activeRecognition && activeMicTextarea === textareaId) {
+  // Stop if already listening
+  if (activeRecognition) {
     try { activeRecognition.stop(); } catch(e) {}
     activeRecognition = null;
     activeMicTextarea = null;
-    setMicStatus(textareaId, 'idle', 'Stopped. Press Translate to convert to English.');
-    // Enable translate button if we have spoken content
-    var tBtn = document.getElementById('btn-translate-' + textareaId);
-    if (tBtn && spokenBuffer[textareaId]) tBtn.disabled = false;
+    setMicStatus(textareaId, 'idle', '');
     return;
   }
 
-  // Clear buffer if textarea is empty (fresh start)
   var ta = document.getElementById(textareaId);
   if (!ta.value.trim()) {
     spokenBuffer[textareaId] = '';
     ta.dataset.base = '';
   }
 
-  // Disable translate btn while listening (can't translate mid-speech)
-  var tBtn = document.getElementById('btn-translate-' + textareaId);
-  if (tBtn) tBtn.disabled = true;
-
   var recognition = new SpeechRecognition();
   activeRecognition = recognition;
   activeMicTextarea = textareaId;
 
-  recognition.continuous = true;      // keep listening until mic pressed again
-  recognition.interimResults = true;  // show live preview while speaking
+  recognition.continuous = false;
+  recognition.interimResults = true;
   recognition.maxAlternatives = 1;
   recognition.lang = LANG_BCP47[selectedLang] || 'hi-IN';
 
   var langObj = LANG_OPTIONS.find(function(l){ return l.code === selectedLang; });
   var langLabel = langObj ? langObj.label : 'Selected';
-  setMicStatus(textareaId, 'listening', 'Listening in ' + langLabel + '... tap mic again to stop');
+  setMicStatus(textareaId, 'listening', 'Listening in ' + langLabel + '... speak now');
 
-  // THE KEY FIX: track last processed index so we never re-add old results
-  var lastFinalIndex = 0;
-  var collectedFinal = '';
+  // Disable translate btn while listening
+  var tBtn = document.getElementById('btn-translate-' + textareaId);
+  if (tBtn) tBtn.disabled = true;
 
   recognition.onresult = function(event) {
     var interim = '';
-
-    // Only loop from lastFinalIndex — NEVER from 0
-    // This prevents the duplicate text problem with continuous=true
-    for (var i = lastFinalIndex; i < event.results.length; i++) {
+    var finalText = '';
+    // Use event.resultIndex - only reads NEW results, prevents duplicates
+    for (var i = event.resultIndex; i < event.results.length; i++) {
       if (event.results[i].isFinal) {
-        collectedFinal += event.results[i][0].transcript + ' ';
-        lastFinalIndex = i + 1; // advance pointer so we never revisit
+        finalText += event.results[i][0].transcript;
       } else {
         interim += event.results[i][0].transcript;
       }
     }
-
-    // Show preview: existing base + new finals + current interim
-    var base = ta.dataset.base || '';
-    var preview = (base + ' ' + collectedFinal + interim).trim();
-    ta.value = preview;
-
-    // Save to buffer for translate button
-    spokenBuffer[textareaId] = ((ta.dataset.base || '') + ' ' + collectedFinal).trim();
+    // Show live interim preview
+    if (interim) {
+      var base = ta.dataset.base || '';
+      ta.value = (base ? base.trim() + ' ' : '') + interim;
+    }
+    // On final: append to base and save to buffer
+    if (finalText) {
+      var existing = ta.dataset.base || '';
+      var newBase = (existing ? existing.trim() + ' ' : '') + finalText.trim();
+      ta.value = newBase;
+      ta.dataset.base = newBase;
+      spokenBuffer[textareaId] = newBase;
+    }
   };
 
   recognition.onerror = function(event) {
-    // no-speech is normal in continuous mode — ignore it and keep going
-    if (event.error === 'no-speech') return;
-    if (event.error === 'aborted') return;
     activeRecognition = null;
     activeMicTextarea = null;
-    var msg = event.error === 'not-allowed' ? 'Mic blocked. Allow mic in browser settings.' :
+    var msg = event.error === 'no-speech'   ? 'No speech heard. Try again.' :
+              event.error === 'not-allowed' ? 'Mic blocked. Allow in browser settings.' :
               event.error === 'network'     ? 'Network error. Check internet.' :
-              'Error: ' + event.error;
-    setMicStatus(textareaId, 'idle', msg);
-    setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
+              event.error === 'aborted'     ? '' : 'Error: ' + event.error;
+    setMicStatus(textareaId, 'idle', msg ? msg : '');
+    setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3000);
+    var tBtn2 = document.getElementById('btn-translate-' + textareaId);
+    if (tBtn2 && spokenBuffer[textareaId]) tBtn2.disabled = false;
   };
 
   recognition.onend = function() {
-    // Android sometimes auto-stops — restart if we're still supposed to be listening
-    if (activeRecognition === recognition && activeMicTextarea === textareaId) {
-      try { recognition.start(); } catch(e) {
-        activeRecognition = null;
-        activeMicTextarea = null;
-        setMicStatus(textareaId, 'idle', '');
-      }
+    activeRecognition = null;
+    activeMicTextarea = null;
+    var tBtn2 = document.getElementById('btn-translate-' + textareaId);
+    if (tBtn2 && spokenBuffer[textareaId]) {
+      tBtn2.disabled = false;
+      setMicStatus(textareaId, 'done', 'Done! Tap mic to add more or press Translate');
+      setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3000);
+    } else {
+      setMicStatus(textareaId, 'idle', '');
     }
   };
 
