@@ -241,6 +241,44 @@ body {
 .other-input:focus { border-color: var(--yellow); background: #fff; }
 
 /* SUBMIT */
+.search-bar { display: flex; gap: 10px; align-items: center; }
+.search-bar input {
+  flex: 1; background: #f7f4ef; border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; font-family: 'DM Sans', sans-serif;
+  font-size: 14px; color: var(--ink); outline: none; transition: border-color .18s;
+}
+.search-bar input:focus { border-color: var(--yellow); background: #fff; }
+.search-btn {
+  background: var(--black); color: var(--yellow); font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 13px; border: none; border-radius: 10px;
+  padding: 10px 18px; cursor: pointer; white-space: nowrap; transition: opacity .15s;
+}
+.search-btn:hover { opacity: 0.85; }
+.search-results { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.result-row {
+  border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  background: #f7f4ef; cursor: pointer; transition: all .15s;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.result-row:hover { border-color: var(--yellow); background: var(--yellow-light); }
+.result-row .rr-left { font-size: 13px; font-weight: 600; color: var(--ink); }
+.result-row .rr-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.rr-btn {
+  background: var(--black); color: var(--yellow); font-size: 11px; font-weight: 700;
+  border: none; border-radius: 7px; padding: 5px 12px; cursor: pointer;
+  font-family: 'Syne', sans-serif; white-space: nowrap;
+}
+.edit-banner {
+  background: var(--yellow); color: var(--black); font-size: 12px; font-weight: 700;
+  padding: 8px 14px; border-radius: 8px; margin-bottom: 14px;
+  display: none; align-items: center; gap: 8px;
+}
+.edit-banner.show { display: flex; }
+.edit-cancel-btn {
+  margin-left: auto; background: var(--black); color: var(--yellow);
+  border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px;
+  font-weight: 700; cursor: pointer; font-family: 'Syne', sans-serif;
+}
 .submit-btn {
   width: 100%;
   background: var(--black);
@@ -444,6 +482,21 @@ body {
   transition: background .14s;
 }
 .btn-cancel:hover { background: var(--border); }
+.btn-translate {
+  background: var(--yellow);
+  border: none;
+  color: var(--black);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.btn-translate:hover { opacity: 0.84; }
+.btn-translate:disabled { opacity: 0.35; cursor: not-allowed; }
 
 @media print {
   body { background: #fff; }
@@ -476,6 +529,21 @@ body {
 
 <div class="page">
 
+  <!-- 0. Search & Edit -->
+  <div class="card" id="search-card">
+    <div class="card-top">
+      <span class="card-badge">Search</span>
+      <span class="card-title">Edit Existing Submission</span>
+    </div>
+    <div class="card-body">
+      <div class="search-bar">
+        <input type="text" id="search-regno" inputmode="numeric" maxlength="8" placeholder="Enter Reg No to search...">
+        <button class="search-btn" onclick="searchByRegno()">Search</button>
+      </div>
+      <div class="search-results" id="search-results"></div>
+    </div>
+  </div>
+
   <!-- 1. Student Details -->
   <div class="card">
     <div class="card-top">
@@ -483,6 +551,10 @@ body {
       <span class="card-title">Student Details</span>
     </div>
     <div class="card-body">
+      <div class="edit-banner" id="edit-banner">
+        Editing: <span id="edit-query-label"></span>
+        <button class="edit-cancel-btn" onclick="cancelEdit()">Cancel Edit</button>
+      </div>
       <div class="row">
         <div class="field">
           <label class="field-label">Registration No. <span style="color:#e53e3e">*</span></label>
@@ -670,6 +742,7 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('academic')">Cancel</button>
+      <button class="btn-translate" id="btn-translate-partB1" onclick="translateNow('partB1')" disabled>🌐 Translate</button>
       <button class="btn-save" onclick="saveModal('academic')">Save &amp; Close ✓</button>
     </div>
   </div>
@@ -718,6 +791,7 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('residential')">Cancel</button>
+      <button class="btn-translate" id="btn-translate-partB2" onclick="translateNow('partB2')" disabled>🌐 Translate</button>
       <button class="btn-save" onclick="saveModal('residential')">Save &amp; Close ✓</button>
     </div>
   </div>
@@ -765,6 +839,7 @@ body {
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('behavioural')">Cancel</button>
+      <button class="btn-translate" id="btn-translate-partB3" onclick="translateNow('partB3')" disabled>🌐 Translate</button>
       <button class="btn-save" onclick="saveModal('behavioural')">Save &amp; Close ✓</button>
     </div>
   </div>
@@ -889,9 +964,8 @@ function startVoice(textareaId) {
 
   // Stop if already listening
   if (activeRecognition) {
-    try { activeRecognition.stop(); } catch(e) {}
     activeRecognition = null;
-    setMicStatus(textareaId, 'idle', '');
+    try { window['_recog_' + textareaId].stop(); } catch(e) {}
     return;
   }
 
@@ -900,7 +974,10 @@ function startVoice(textareaId) {
 
   var recognition = new SpeechRecognition();
   activeRecognition = recognition;
-  recognition.continuous = false;
+  window['_recog_' + textareaId] = recognition;
+  window['_collected_' + textareaId] = '';
+  var collectedFinal = '';
+  recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
   recognition.lang = LANG_BCP47[selectedLang] || 'hi-IN';
@@ -914,36 +991,24 @@ function startVoice(textareaId) {
   recognition.onstart = function() { gotResult = false; };
 
   recognition.onresult = function(event) {
-    gotResult = true;
     var interim = '';
-    var finalText = '';
     for (var i = event.resultIndex; i < event.results.length; i++) {
-      if (event.results[i].isFinal) { finalText += event.results[i][0].transcript; }
-      else { interim += event.results[i][0].transcript; }
+      if (event.results[i].isFinal) {
+        collectedFinal += event.results[i][0].transcript + ' ';
+        window['_collected_' + textareaId] = collectedFinal;
+      } else {
+        interim += event.results[i][0].transcript;
+      }
     }
-    if (interim) {
-      var base = ta.dataset.base || '';
-      ta.value = base ? base.trim() + ' ' + interim : interim;
-    }
-    if (finalText) {
-      try { recognition.stop(); } catch(e) {}
-      activeRecognition = null;
-      setMicStatus(textareaId, 'translating', '⚙ Translating to English...');
-      translateToEnglish(finalText, selectedLang).then(function(translated) {
-        var existing = ta.dataset.base || '';
-        var newVal = existing ? existing.trim() + ' ' + translated : translated;
-        ta.value = newVal;
-        ta.dataset.base = newVal;
-        setMicStatus(textareaId, 'done', '✓ Done! Tap mic to add more');
-        setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
-      });
-    }
+    var base = ta.dataset.base || '';
+    ta.value = base ? base.trim() + ' ' + collectedFinal + interim : collectedFinal + interim;
   };
 
   recognition.onerror = function(event) {
+    if (event.error === 'no-speech') return;
+    try { window['_recog_' + textareaId].stop(); } catch(e) {}
     activeRecognition = null;
-    var msg = event.error === 'no-speech'   ? 'No speech heard. Try again.' :
-              event.error === 'not-allowed' ? 'Mic blocked. Allow mic in browser settings.' :
+    var msg = event.error === 'not-allowed' ? 'Mic blocked. Allow mic in browser settings.' :
               event.error === 'network'     ? 'Network error. Check internet.' :
               event.error === 'aborted'     ? '' : 'Error: ' + event.error;
     setMicStatus(textareaId, 'idle', msg ? '⚠ ' + msg : '');
@@ -951,13 +1016,17 @@ function startVoice(textareaId) {
   };
 
   recognition.onend = function() {
-    // Small delay for Android where onend fires before onresult
-    setTimeout(function() {
-      if (activeRecognition === recognition) {
-        activeRecognition = null;
+    if (activeRecognition === null) {
+      if (window['_collected_' + textareaId] && window['_collected_' + textareaId].trim()) {
+        var tBtn = document.getElementById('btn-translate-' + textareaId);
+        if (tBtn) tBtn.disabled = false;
+        setMicStatus(textareaId, 'idle', '✓ Speech captured! Now tap Translate.');
+      } else {
         setMicStatus(textareaId, 'idle', '');
       }
-    }, 400);
+    } else {
+      try { recognition.start(); } catch(e) {}
+    }
   };
 
   try {
@@ -966,6 +1035,124 @@ function startVoice(textareaId) {
     activeRecognition = null;
     setMicStatus(textareaId, 'idle', '⚠ Could not start mic. Try again.');
   }
+}
+
+function translateNow(textareaId) {
+  var collected = window['_collected_' + textareaId];
+  var ta = document.getElementById(textareaId);
+  var tBtn = document.getElementById('btn-translate-' + textareaId);
+  if (!collected || !collected.trim()) {
+    alert('Nothing to translate. Please speak first.');
+    return;
+  }
+  if (tBtn) tBtn.disabled = true;
+  setMicStatus(textareaId, 'translating', '⚙ Translating to English...');
+  translateToEnglish(collected.trim(), selectedLang).then(function(translated) {
+    var existing = ta.dataset.base || '';
+    var newVal = existing ? existing.trim() + ' ' + translated : translated;
+    ta.value = newVal;
+    ta.dataset.base = newVal;
+    window['_collected_' + textareaId] = '';
+    setMicStatus(textareaId, 'done', '✓ Translated! Tap mic to speak more.');
+    setTimeout(function() { setMicStatus(textareaId, 'idle', ''); }, 3500);
+  });
+}
+
+var editRowIndex = null;
+
+function searchByRegno() {
+  var regno = document.getElementById('search-regno').value.trim();
+  if (!/^\d{8}$/.test(regno)) { alert('Please enter a valid 8-digit Reg No.'); return; }
+  var div = document.getElementById('search-results');
+  div.innerHTML = '<p style="font-size:13px;color:var(--muted)">Searching...</p>';
+  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec?regno=' + regno)
+    .then(function(res) { return res.json(); })
+    .then(function(rows) {
+      if (!rows || rows.length === 0) {
+        div.innerHTML = '<p style="font-size:13px;color:#e53e3e">No records found for Reg No: ' + regno + '</p>';
+        return;
+      }
+      var html = '';
+      rows.forEach(function(row, idx) {
+        var preview = row.queryText ? row.queryText.toString().substring(0,45) + '...' : 'No text';
+        html += '<div class="result-row">'
+          + '<div>'
+          + '<div class="rr-left">' + (row.query || 'N/A') + '</div>'
+          + '<div class="rr-sub">Rating: ' + (row.rating || '-') + ' | ' + preview + '</div>'
+          + '</div>'
+          + '<button class="rr-btn" onclick="loadEditRow(' + idx + ')">Edit</button>'
+          + '</div>';
+      });
+      div.innerHTML = html;
+      window._searchRows = rows;
+    })
+    .catch(function() {
+      div.innerHTML = '<p style="font-size:13px;color:#e53e3e">Error fetching. Check internet.</p>';
+    });
+}
+
+function loadEditRow(idx) {
+  var row = window._searchRows[idx];
+  editRowIndex = row._rowIndex;
+
+  // Fill fields
+  document.getElementById('regno').value = row.regno || '';
+  document.getElementById('official-uid').value = row.officialUid || '';
+  document.getElementById('partA').value = row.partA || '';
+  document.getElementById('father').value = row.father || '';
+  document.getElementById('mother').value = row.mother || '';
+
+  // Rating
+  document.querySelectorAll('.rating-card').forEach(function(card) {
+    card.classList.remove('selected');
+    var r = card.querySelector('input[type="radio"]');
+    if (r && r.value === row.rating) { r.checked = true; card.classList.add('selected'); }
+  });
+
+  // Mentor
+  document.querySelectorAll('.pill').forEach(function(pill) {
+    pill.classList.remove('selected');
+    var r = pill.querySelector('input[type="radio"]');
+    if (r && r.value === row.mentorContact) { r.checked = true; pill.classList.add('selected'); }
+  });
+
+  // Part B - fill correct category
+  var academic    = ['Examination','Academics','Academic Support','Fee & Scholarship','Records','Placement'];
+  var residential = ['Residential Services','Mess','Laundry','Gym Services'];
+  var behavioural = ['Psychological Counselling','Indiscipline','Any Other'];
+  var cat = academic.indexOf(row.query) !== -1 ? 'academic'
+          : residential.indexOf(row.query) !== -1 ? 'residential'
+          : behavioural.indexOf(row.query) !== -1 ? 'behavioural' : '';
+  var taId = cat === 'academic' ? 'partB1' : cat === 'residential' ? 'partB2' : 'partB3';
+  if (cat) {
+    document.getElementById(taId).value = row.queryText || '';
+    document.getElementById(taId).dataset.base = row.queryText || '';
+    document.querySelectorAll('.query.' + cat).forEach(function(cb) {
+      if (cb.value === row.query) { cb.checked = true; cb.closest('.chip').classList.add('on'); }
+    });
+    var tile = document.getElementById('tile-' + cat);
+    if (tile) tile.classList.add('filled');
+  }
+
+  // Show edit banner
+  document.getElementById('edit-banner').classList.add('show');
+  document.getElementById('edit-query-label').textContent = row.query + ' (Row ' + row._rowIndex + ')';
+  document.getElementById('search-results').innerHTML = '';
+  document.getElementById('search-regno').value = '';
+  document.getElementById('regno').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEdit() {
+  editRowIndex = null;
+  document.getElementById('edit-banner').classList.remove('show');
+  document.querySelectorAll('input').forEach(function(el) {
+    if (el.type === 'text') el.value = '';
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+  });
+  document.querySelectorAll('textarea').forEach(function(t) { t.value = ''; });
+  document.querySelectorAll('.pill, .rating-card, .chip').forEach(function(el) { el.classList.remove('selected','on'); });
+  document.querySelectorAll('.tile').forEach(function(t) { t.classList.remove('filled'); });
+  document.getElementById('other-wrap').style.display = 'none';
 }
 
 function getVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
@@ -1002,11 +1189,13 @@ function submitForm() {
     if (cb.classList.contains('academic'))    txt = getVal('partB1');
     if (cb.classList.contains('residential')) txt = getVal('partB2');
     if (cb.classList.contains('behavioural')) txt = getVal('partB3');
-    rows.push({
+    var rowData = {
       regno: reg, query: cb.value, queryText: txt,
       partA: partA, rating: rating, mentorContact: mentorContact,
       father: father, mother: mother, officialUid: officialUid
-    });
+    };
+    if (editRowIndex) rowData._rowIndex = editRowIndex;
+    rows.push(rowData);
   });
 
   if (rows.length === 0) {
@@ -1014,7 +1203,7 @@ function submitForm() {
   }
 
   // Submit to Google Sheets
-  fetch('https://script.google.com/macros/s/AKfycbyRhgMqjUmqiCzgiwLSY-WQuMbiLw7ZnR2r04f1yG93fWnBPexyWN4SI4snWlR10V1TIw/exec', {
+  fetch('https://script.google.com/macros/s/AKfycbyPMZJRZhu5tEoPG_E0TlswstJSCnkqYktFM3G9pwgNOTNV2ujqHsAeRtQh-D0v9xHS/exec', {
     method: 'POST', mode: 'no-cors', body: JSON.stringify({ rows: rows })
   });
 
@@ -1027,7 +1216,10 @@ function submitForm() {
   document.querySelectorAll('.pill, .rating-card, .chip').forEach(function(el) { el.classList.remove('selected','on'); });
   document.querySelectorAll('.tile').forEach(function(t) { t.classList.remove('filled'); });
   document.getElementById('other-wrap').style.display = 'none';
-  alert('Submitted Successfully! ✅');
+  var msg = editRowIndex ? 'Record Updated Successfully! ✅' : 'Submitted Successfully! ✅';
+  editRowIndex = null;
+  document.getElementById('edit-banner').classList.remove('show');
+  alert(msg);
 }
 </script>
 </body>
